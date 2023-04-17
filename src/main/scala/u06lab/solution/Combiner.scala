@@ -1,5 +1,7 @@
 package u06lab.solution
 
+import scala.runtime.Nothing$
+
 /** 1) Implement trait Functions with an object FunctionsImpl such that the code in TryFunctions works correctly. */
 
 trait Functions:
@@ -8,9 +10,14 @@ trait Functions:
   def max(a: List[Int]): Int // gives Int.MinValue if a is empty
 
 object FunctionsImpl extends Functions:
-  override def sum(a: List[Double]): Double = ???
-  override def concat(a: Seq[String]): String = ???
-  override def max(a: List[Int]): Int = ???
+
+  import GivenCombiner.given
+  override def sum(a: List[Double]): Double = combiner(a)
+  override def concat(a: Seq[String]): String = combiner(a)
+  override def max(a: List[Int]): Int = combiner(a)
+  def combiner[A](sequence: Seq[A])(using combiner: Combiner[A]) = sequence match
+    case Seq() => combiner.unit
+    case _ => sequence.reduce((a, b) => combiner.combine(a, b))
 
 /*
  * 2) To apply DRY principle at the best,
@@ -28,6 +35,17 @@ object FunctionsImpl extends Functions:
 trait Combiner[A]:
   def unit: A
   def combine(a: A, b: A): A
+
+object GivenCombiner:
+  given Combiner[String] with
+    override def combine(a: String, b: String) = a + b
+    override def unit = ""
+  given Combiner[Int] with
+    override def combine(a: Int, b: Int) = if a>b then a else b
+    override def unit = Integer.MIN_VALUE
+  given Combiner[Double] with
+    override def combine(a: Double, b: Double) = a + b
+    override def unit = 0.0
 
 @main def checkFunctions(): Unit =
   val f: Functions = FunctionsImpl
